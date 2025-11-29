@@ -1,0 +1,42 @@
+# Ignore everything at repo root by default
+/*
+!.gitignore
+!/README.md
+!/requirements.txt
+!/ai_journalist/
+!/article.md
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+.env/
+
+# Environment variables
+.env
+*.env
+**/.env
+
+# Distribution / packaging
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# Local data
+article_processed*/
