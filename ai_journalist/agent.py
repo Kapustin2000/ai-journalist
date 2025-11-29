@@ -1,5 +1,8 @@
 from google.adk.agents.llm_agent import Agent
 from ai_journalist.tools import markup_blocks, memory, agent_utils
+from .tools.memory import load_context
+from .sub_agents.segment_editor.agent import segment_editor as segment_editor_agent
+from google.adk.tools import AgentTool
 
 try:
     from dotenv import load_dotenv
@@ -15,6 +18,8 @@ root_agent = Agent(
     description='A specialized AI agent for journalistic article writing assistance. Helps with block markup, editing suggestions, and formatting standardization.',
     instruction=agent_utils.load_instructions(),
     tools=[
-        markup_blocks.markup_article_blocks
+        markup_blocks.markup_article_blocks,
+        AgentTool(segment_editor_agent)
     ],
+    before_agent_callback=load_context
 )

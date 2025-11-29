@@ -3,7 +3,6 @@ import uuid
 from typing import List, Dict, Any
 from google.adk.agents.llm_agent import ToolContext
 
-
 def markup_article_blocks(article_content: str, tool_context: ToolContext) -> dict:
     """
     Parse article content and mark each block with a unique ID.
