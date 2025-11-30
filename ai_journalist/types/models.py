@@ -1,8 +1,10 @@
 from typing import Any, Dict, List, Literal, Optional
-from pydantic import BaseModel, Field
+from uuid import uuid4
+
+from pydantic import BaseModel, Field, model_validator
 
 class Segment(BaseModel):
-    id: str
+    id: str = Field(default_factory=lambda: f"segment_{uuid4().hex[:8]}")
     type: Literal[
         "heading_h1", "heading_h2", "heading_h3",
         "paragraph", "list_item", "blockquote",
@@ -60,6 +62,15 @@ class SegmentActionResult(BaseModel):
     insert_after_segment_id: Optional[str] = None
     insert_before_segment_id: Optional[str] = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def _ensure_new_segment_id(cls, values: dict) -> dict:
+        new_segment = values.get("new_segment")
+        if isinstance(new_segment, dict) and not new_segment.get("id"):
+            new_segment = {**new_segment, "id": f"segment_{uuid4().hex[:8]}"}
+            values["new_segment"] = new_segment
+        return values
+
 class SegmentAction(BaseModel):
     type: Literal[
         "rewrite_segment",
@@ -82,3 +93,26 @@ class SegmentEditorOutput(BaseModel):
     status: Literal["updated", "skipped", "error"]
     actions: List[SegmentAction] = Field(default_factory=list)
     handoff: SegmentHandoff = SegmentHandoff()
+
+
+class WriterContext(BaseModel):
+    article_summary: Optional[str] = None
+    supporting_facts: List[str] = Field(default_factory=list)
+    audience: Optional[str] = None
+    style_guide: Optional[str] = None
+
+
+class WriterInput(BaseModel):
+    segment: Optional[Segment] = None
+    neighbors: SegmentNeighbors = SegmentNeighbors()
+    instructions: List[SegmentInstruction]
+    constraints: SegmentConstraints = SegmentConstraints()
+    context: WriterContext = WriterContext()
+
+
+class WriterOutput(BaseModel):
+    segment_id: Optional[str] = None
+    status: Literal["drafted", "updated", "skipped", "error"]
+    segment: Segment
+    notes: Optional[str] = None
+    citations: List[str] = Field(default_factory=list)

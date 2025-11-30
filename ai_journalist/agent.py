@@ -19,7 +19,7 @@ root_agent = Agent(
     instruction=agent_utils.load_instructions(),
     tools=[
         markup_blocks.markup_article_blocks,
-        AgentTool(segment_editor_agent)
+        AgentTool(segment_editor_agent),
     ],
     before_agent_callback=load_context
 )

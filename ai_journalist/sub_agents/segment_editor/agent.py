@@ -1,11 +1,12 @@
 from pathlib import Path
 from typing import Literal, Optional
+from uuid import uuid4
 from google.adk.agents.callback_context import CallbackContext
 from google.adk.models import LlmResponse
 import json
 
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from google.adk.agents.llm_agent import Agent
 from ai_journalist.types.models import (
     Segment,
@@ -22,6 +23,16 @@ class SegmentEditorInput(BaseModel):
     neighbors: SegmentNeighbors = SegmentNeighbors()
     instructions: list[SegmentInstruction]
     constraints: SegmentConstraints = SegmentConstraints()
+
+    @model_validator(mode="before")
+    @classmethod
+    def _ensure_segment_id(cls, values: dict) -> dict:
+        segment = values.get("segment")
+        if isinstance(segment, dict) and not segment.get("id"):
+            # Auto-assign a lightweight identifier so downstream validators accept the payload.
+            segment = {**segment, "id": f"segment_{uuid4().hex[:8]}"}
+            values["segment"] = segment
+        return values
 
 
 class SegmentEditorOutput(BaseModel):
@@ -56,18 +67,23 @@ def enqueue_segment_update(
 
     queue = callback_context.state.setdefault("pending_segment_updates", [])
     new_entry = segment_update.model_dump()
+    new_entry["updated_at"] = callback_context.now.isoformat() if hasattr(callback_context, "now") else None
 
+    updated_existing = False
     for entry in queue:
         if entry.get("segment_id") == new_entry.get("segment_id"):
             entry_actions = entry.setdefault("actions", [])
             entry_actions.extend(new_entry.get("actions", []))
             entry["status"] = new_entry.get("status", entry.get("status"))
             entry["handoff"] = new_entry.get("handoff", entry.get("handoff", {}))
+            entry["updated_at"] = new_entry["updated_at"]
+            updated_existing = True
             break
-    else:
+
+    if not updated_existing:
         queue.append(new_entry)
 
-    callback_context.state["pending_segment_updates"] = queue
+    callback_context.state["pending_segment_updates"] = queue.copy()
     
     # опционально пометь, что появились неприменённые правки
     callback_context.state["has_pending_segment_updates"] = True

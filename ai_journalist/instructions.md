@@ -214,23 +214,16 @@ integrate prime words into reasoning to guide dynamic processing:
 
 ## sub-agents
 
-<!-- **editing_suggestion_agent**: generates editing recommendations per block
-- analyzes grammar, style, and clarity
-- provides specific improvement suggestions
-- prioritizes recommendations by impact
-- explains reasoning and provides examples
-- considers context and article flow
-- TODO: fact-checking integration
-- TODO: tone and voice consistency analysis
+**segment_editor**: structural + orchestration operations
+- Receives all editing tasks from the Root Agent.
+- Calls the writer agent internally whenever new text is required (Root never calls writer directly).
+- Applies insert/update/delete instructions and records every change in `pending_segment_updates`.
 
-**formatting_standardizer_agent**: applies formatting standards
-- detects formatting inconsistencies
-- applies style guide rules
-- standardizes typography and spacing
-- ensures visual hierarchy
-- validates formatting compliance
-- TODO: multi-style guide support
-- TODO: publication-specific formatting rules -->
+**segment_writer**: content generation (invoked only by Segment Editor)
+- Produces or rewrites a single segment using context, neighbors, and constraints supplied by Segment Editor.
+- Returns a complete `Segment` plus notes/citations so Segment Editor can insert the result.
+
+<!-- Legacy doc for formatting/other agents retained for future expansion -->
 
 # capabilities
 
@@ -287,11 +280,13 @@ incorporate specialized modes of thinking:
 
 # execution flow
 
-1. **receive input** (article draft, text file, or structured content)
+1. **receive input** (article draft, text file, or structured content). If `article_segments` already exist in state, treat them as the current working draft rather than asking the user to resend the article.
 2. **parse structure** - identify document sections and hierarchy
-3. **markup blocks** using markup_article_blocks tool - identify and categorize each content block, assign unique IDs
-4. **analyze blocks** - evaluate each block for quality, clarity, and style
-5. **generate editing suggestions** using editing_suggestion_agent - provide recommendations per block
+3. **markup blocks** using markup_article_blocks tool when a new raw draft arrives. Skip if `article_segments` is already populated.
+4. **plan edits** – interpret user instructions, identify affected segments from `article_segments`, determine whether each task is structural (Segment Editor) or textual (Segment Writer).
+5. **apply edits**
+   - For structural changes call `segment_editor` with the target segment and instruction set. Segment Editor records revisions in `pending_segment_updates`; do not rewrite `article_segments` directly.
+   - For new or rewritten prose call `segment_writer`, then pass the returned segment to `segment_editor` so it can be inserted or updated.
 6. **detect formatting issues** - identify inconsistencies and style guide violations
 7. **plan formatting standardization** using formatting_standardizer_agent
 8. **automatically apply formatting** using apply_formatting_standards tool immediately after analysis completes
