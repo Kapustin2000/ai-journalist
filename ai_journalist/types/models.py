@@ -9,16 +9,16 @@ class Segment(BaseModel):
         "code_block", "horizontal_rule", "table_row"
     ]
     content: str
-    position: int
+    position: Optional[int] = None
     level: Optional[int] = None          # для заголовков/списков
     status: Literal["active", "pending", "archived"] = "active"
     deletion_status: Literal["none", "mark", "remove"] = "none"
 
 class NeighborContext(BaseModel):
-    id: str
-    content: str
-    type: str
-    position: int
+    id: Optional[str] = None
+    content: Optional[str] = None
+    type: Optional[str] = None
+    position: Optional[int] = None
     level: Optional[int] = None
     status: Literal["active", "pending", "archived"] = "active"
 
@@ -56,6 +56,9 @@ class SegmentActionResult(BaseModel):
     notes: Optional[str] = None
     deletion_status: Optional[Literal["none", "mark", "remove"]] = None
     reason: Optional[str] = None
+    new_segment: Optional[Segment] = None
+    insert_after_segment_id: Optional[str] = None
+    insert_before_segment_id: Optional[str] = None
 
 class SegmentAction(BaseModel):
     type: Literal[
@@ -65,6 +68,7 @@ class SegmentAction(BaseModel):
         "tighten",
         "expand",
         "fact_check",
+        "insert_segment",
     ]
     result: SegmentActionResult
 
