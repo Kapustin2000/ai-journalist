@@ -5,6 +5,7 @@
 !/requirements.txt
 !/ai_journalist/
 !/article.md
+!/docs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
