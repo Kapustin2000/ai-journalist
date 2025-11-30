@@ -5,6 +5,7 @@
 !/requirements.txt
 !/ai_journalist/
 !/article.md
+!/Dockerfile
 !/docs/
 !/docs/**
 
