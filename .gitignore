@@ -4,10 +4,15 @@
 !/README.md
 !/requirements.txt
 !/ai_journalist/
+!/package.json
+!/pnpm-lock.yaml
 !/article.md
 !/Dockerfile
+!/docker-compose.yml
 !/docs/
 !/docs/**
+!/back-end/
+!/back-end/**
 !/.github
 
 # Byte-compiled / optimized / DLL files
