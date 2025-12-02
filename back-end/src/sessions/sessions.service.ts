@@ -4,7 +4,7 @@ import { DocumentsService } from '../documents/documents.service';
 import { CreateSessionDto } from './dto/create-session.dto';
 import { DocumentRecord } from '../documents/interfaces/document.interface';
 
-interface SessionRecord {
+export interface SessionRecord {
   id: string;
   documentId: string;
   projectId: string;
@@ -19,7 +19,7 @@ export class SessionsService {
   constructor(private readonly documentsService: DocumentsService) {}
 
   createSession(dto: CreateSessionDto) {
-    let document: DocumentRecord = this.documentsService.findByProjectResource(
+    let document: DocumentRecord | null = this.documentsService.findByProjectResource(
       dto.projectId,
       dto.resourceId,
     );

@@ -13,6 +13,8 @@
 !/docs/**
 !/back-end/
 !/back-end/**
+!/asrp-editor/
+!/asrp-editor/**
 !/.github
 
 # Byte-compiled / optimized / DLL files

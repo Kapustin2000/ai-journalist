@@ -46,7 +46,11 @@ export class DocumentsService {
     const compositeId = this.buildCompositeId(options.projectId, options.resourceId);
     const existingId = this.documentsByComposite.get(compositeId);
     if (existingId) {
-      return this.documents.get(existingId);
+      const existing = this.documents.get(existingId);
+      if (!existing) {
+        throw new NotFoundException(`Document ${existingId} not found`);
+      }
+      return existing;
     }
 
     const now = new Date().toISOString();
@@ -86,7 +90,8 @@ export class DocumentsService {
     if (!documentId) {
       return null;
     }
-    return this.documents.get(documentId);
+    const document = this.documents.get(documentId);
+    return document ?? null;
   }
 
   getDocument(id: string): DocumentRecord {
