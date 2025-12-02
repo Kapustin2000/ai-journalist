@@ -70,31 +70,24 @@ const handleCreate = async () => {
 
 <style scoped>
 .panel {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  border: 1px solid #e1e6ef;
+  @apply bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-lg shadow-slate-950/40;
+}
+
+.panel-header h2 {
+  @apply text-xl font-semibold text-slate-50;
 }
 
 .form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  @apply flex flex-col gap-4;
 }
 
 label {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 0.9rem;
-  color: #475569;
+  @apply flex flex-col gap-2 text-sm text-slate-300;
 }
 
 input,
 textarea {
-  border-radius: 8px;
-  border: 1px solid #cbd5f5;
-  padding: 8px 10px;
+  @apply bg-slate-950/60 border border-slate-800 rounded-2xl px-4 py-3 text-slate-100 focus:outline-none focus:border-sky-500/60;
   font: inherit;
 }
 
@@ -103,16 +96,7 @@ textarea {
 }
 
 .primary {
-  border: none;
-  border-radius: 8px;
-  padding: 10px 16px;
-  background: #2563eb;
-  color: #fff;
-  font-weight: 600;
-}
-
-.primary:disabled {
-  opacity: 0.6;
+  @apply inline-flex justify-center items-center rounded-2xl px-4 py-3 bg-sky-500 text-slate-900 font-semibold transition disabled:opacity-50;
 }
 </style>
 

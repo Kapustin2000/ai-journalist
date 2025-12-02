@@ -1,7 +1,10 @@
 <template>
   <div class="panel">
     <div class="panel-header">
-      <h2>История</h2>
+      <div>
+        <p class="label">Журнал</p>
+        <h2>История</h2>
+      </div>
       <button class="ghost" @click="$emit('refresh')" :disabled="!documentId">
         Обновить
       </button>
@@ -39,69 +42,55 @@ const pretty = (value: unknown) => JSON.stringify(value, null, 2);
 
 <style scoped>
 .panel {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  border: 1px solid #e1e6ef;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  @apply bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-lg shadow-slate-950/30 h-full;
 }
 
 .panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  @apply flex items-center justify-between;
 }
 
-.history-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-height: 40vh;
-  overflow-y: auto;
+.panel-header .label {
+  @apply text-xs uppercase tracking-widest text-slate-500;
 }
 
-.history-item {
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 12px;
-  background: #f8fafc;
-}
-
-.history-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 8px;
-}
-
-details {
-  font-size: 0.85rem;
-}
-
-pre {
-  background: #0f172a;
-  color: #f8fafc;
-  padding: 10px;
-  border-radius: 8px;
-  overflow: auto;
+.panel-header h2 {
+  @apply text-xl font-semibold text-slate-50;
 }
 
 .ghost {
-  border: none;
-  background: transparent;
-  color: #2563eb;
-  font-weight: 600;
+  @apply text-sky-400 hover:text-sky-300 transition disabled:opacity-40;
+}
+
+.history-list {
+  @apply flex flex-col gap-3 overflow-y-auto max-h-[40vh] pr-1;
+}
+
+.history-item {
+  @apply border border-slate-800 rounded-2xl p-4 bg-slate-950/50;
+}
+
+.history-meta {
+  @apply flex flex-col gap-1 mb-3 text-sm text-slate-300;
+}
+
+.history-meta strong {
+  @apply text-slate-100;
+}
+
+details {
+  @apply text-xs text-slate-400;
+}
+
+summary {
+  @apply cursor-pointer text-sky-300 hover:text-sky-200;
+}
+
+pre {
+  @apply bg-slate-950 text-slate-50 p-3 rounded-xl mt-2 border border-slate-800 overflow-auto;
 }
 
 .empty-state {
-  text-align: center;
-  color: #475569;
-  padding: 12px;
+  @apply border border-dashed border-slate-700 rounded-2xl p-6 text-center text-slate-400;
 }
 </style>
 

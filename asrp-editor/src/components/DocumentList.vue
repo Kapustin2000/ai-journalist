@@ -1,7 +1,10 @@
 <template>
   <div class="panel">
     <div class="panel-header">
-      <h2>Документы</h2>
+      <div>
+        <p class="label">Список</p>
+        <h2>Документы</h2>
+      </div>
       <button class="ghost" @click="$emit('refresh')">Обновить</button>
     </div>
     <div v-if="!documents.length" class="empty-state">
@@ -43,90 +46,55 @@ defineEmits<{
 
 <style scoped>
 .panel {
-  background: #fff;
-  border-radius: 12px;
-  padding: 16px;
-  border: 1px solid #e1e6ef;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  @apply bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-lg shadow-slate-950/30 h-full;
 }
 
 .panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  @apply flex items-center justify-between;
 }
 
-.document-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-height: 40vh;
-  overflow-y: auto;
+.panel-header .label {
+  @apply text-xs uppercase tracking-widest text-slate-500;
 }
 
-.document-card {
-  border: 1px solid transparent;
-  border-radius: 10px;
-  padding: 12px;
-  background: #f8fafc;
-  cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.document-card:hover {
-  border-color: #94a3b8;
-}
-
-.document-card.active {
-  border-color: #2563eb;
-  background: #eff6ff;
-}
-
-.doc-title {
-  font-weight: 600;
-  margin-bottom: 4px;
-}
-
-.doc-meta {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.9rem;
-  color: #475569;
-}
-
-.doc-meta.small {
-  font-size: 0.8rem;
-}
-
-.badge {
-  text-transform: uppercase;
-  font-size: 0.7rem;
-  letter-spacing: 0.05em;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: #c7d2fe;
-  color: #1e1b4b;
+.panel-header h2 {
+  @apply text-xl font-semibold text-slate-50;
 }
 
 .ghost {
-  border: none;
-  background: transparent;
-  color: #2563eb;
-  font-weight: 600;
+  @apply text-sky-400 hover:text-sky-300 transition;
+}
+
+.document-list {
+  @apply flex flex-col gap-3 overflow-y-auto max-h-[45vh] pr-1;
+}
+
+.document-card {
+  @apply border border-slate-800 rounded-2xl p-4 bg-slate-950/40 cursor-pointer transition hover:border-slate-600 hover:bg-slate-900/60;
+}
+
+.document-card.active {
+  @apply border-sky-500/60 bg-sky-500/10;
+}
+
+.doc-title {
+  @apply font-semibold text-slate-100 mb-1;
+}
+
+.doc-meta {
+  @apply flex items-center justify-between text-sm text-slate-400;
+}
+
+.doc-meta.small {
+  @apply text-xs text-slate-500 mt-2;
+}
+
+.badge {
+  @apply uppercase text-[10px] tracking-widest px-2 py-0.5 rounded-full bg-slate-800 text-slate-200;
 }
 
 .empty-state {
-  padding: 16px;
-  border: 1px dashed #cbd5f5;
-  border-radius: 10px;
-  text-align: center;
-  color: #475569;
+  @apply border border-dashed border-slate-700 rounded-2xl p-6 text-center text-slate-400;
 }
 </style>
 
