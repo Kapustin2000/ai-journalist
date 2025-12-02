@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum DocumentStatus {
+  draft
+  published
+  archived
+}
+
+enum UpdateState {
+  pending
+  applied
+  rejected
+}
+
+model Document {
+  id          String          @id @default(uuid())
+  projectId   String
+  resourceId  String
+  title       String?
+  status      DocumentStatus  @default(draft)
+  content     Json
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  history     DocumentHistory[]
+  updates     DocumentUpdate[]
+
+  @@unique([projectId, resourceId])
+}
+
+model DocumentHistory {
+  id         String   @id @default(uuid())
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String
+  note       String?
+  content    Json
+  createdAt  DateTime @default(now())
+}
+
+model DocumentUpdate {
+  id         String      @id @default(uuid())
+  document   Document    @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId String
+  type       String
+  payload    Json
+  state      UpdateState @default(pending)
+  note       String?
+  createdAt  DateTime    @default(now())
+  resolvedAt DateTime?
+}

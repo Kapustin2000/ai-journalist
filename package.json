@@ -1,0 +1,13 @@
+{
+  "name": "ai-journalist-root",
+  "private": true,
+  "scripts": {
+    "dev:backend": "pnpm --dir back-end run start:dev",
+    "dev:adk": "PORT=${ADK_PORT:-8000}; adk api_server --port $PORT",
+    "dev": "concurrently -k -p \"[{name}]\" -n back-end,adk -c green,cyan \"pnpm run dev:backend\" \"pnpm run dev:adk\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.1"
+  }
+}
+
