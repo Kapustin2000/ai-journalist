@@ -2,6 +2,8 @@
 /*
 !.gitignore
 !/README.md
+!/README_SETUP.md
+!/QUICKSTART.md
 !/requirements.txt
 !/ai_journalist/
 !/package.json
@@ -9,6 +11,7 @@
 !/article.md
 !/Dockerfile
 !/docker-compose.yml
+!/Makefile
 !/docs/
 !/docs/**
 !/back-end/

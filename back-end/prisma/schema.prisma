@@ -25,16 +25,16 @@ enum UpdateState {
 }
 
 model Document {
-  id          String          @id @default(uuid())
-  projectId   String
-  resourceId  String
-  title       String?
-  status      DocumentStatus  @default(draft)
-  content     Json
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  history     DocumentHistory[]
-  updates     DocumentUpdate[]
+  id         String            @id @default(uuid())
+  projectId  String
+  resourceId String
+  title      String?
+  status     DocumentStatus    @default(draft)
+  content    Json
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  history    DocumentHistory[]
+  updates    DocumentUpdate[]
 
   @@unique([projectId, resourceId])
 }
@@ -58,4 +58,67 @@ model DocumentUpdate {
   note       String?
   createdAt  DateTime    @default(now())
   resolvedAt DateTime?
+}
+
+enum AiOperationType {
+  rewrite
+  insert
+  delete
+  improve
+  chat
+}
+
+enum AiOperationStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}
+
+model AiOperation {
+  id           String            @id @default(uuid())
+  documentId   String
+  type         AiOperationType
+  status       AiOperationStatus @default(pending)
+  input        Json // Original request data
+  output       Json? // AI response
+  error        String?
+  metadata     Json? // blockId, context, etc
+  tokensUsed   Int?
+  processingMs Int?
+  createdAt    DateTime          @default(now())
+  completedAt  DateTime?
+
+  @@index([documentId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model AiChatMessage {
+  id         String   @id @default(uuid())
+  sessionId  String
+  documentId String
+  role       String // 'user' | 'assistant' | 'system'
+  content    String   @db.Text
+  metadata   Json? // selectedBlockId, updates, etc
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId])
+  @@index([documentId])
+  @@index([createdAt])
+}
+
+model AiSession {
+  id           String   @id @default(uuid())
+  documentId   String
+  userId       String?
+  metadata     Json? // context, preferences, etc
+  messageCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  lastActiveAt DateTime @default(now())
+
+  @@index([documentId])
+  @@index([userId])
+  @@index([lastActiveAt])
 }

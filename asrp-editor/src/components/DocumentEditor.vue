@@ -178,7 +178,7 @@
             </button>
             <button class="secondary-small w-full" @click="$emit('reject-updates')">
               Отклонить все
-            </button>
+          </button>
           </div>
           <div class="empty-state-small" v-if="!document?.id">
             Нет выбранного документа
