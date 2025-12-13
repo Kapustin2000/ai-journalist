@@ -42,7 +42,8 @@ const pretty = (value: unknown) => JSON.stringify(value, null, 2);
 
 <style scoped>
 .panel {
-  @apply bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-lg shadow-slate-950/30 h-full;
+  @apply bg-slate-900 border border-slate-800 rounded-3xl p-6 flex flex-col gap-4 shadow-lg shadow-slate-950/30;
+  max-height: 500px;
 }
 
 .panel-header {

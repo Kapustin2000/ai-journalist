@@ -9,14 +9,17 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@iconify/vue": "^5.0.0",
     "@tiptap/core": "^2.6.6",
     "@tiptap/extension-character-count": "^2.6.6",
     "@tiptap/extension-placeholder": "^2.6.6",
     "@tiptap/extension-underline": "^2.6.6",
     "@tiptap/starter-kit": "^2.6.6",
+    "@tiptap/suggestion": "^2.27.1",
     "@tiptap/vue-3": "^2.6.6",
     "axios": "^1.7.9",
     "pinia": "^3.0.4",
+    "tippy.js": "^6.3.7",
     "vue": "^3.5.12",
     "vue-i18n": "^11.2.2"
   },

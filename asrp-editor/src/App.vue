@@ -28,23 +28,14 @@
           @save="handleSave"
           @change-status="handleStatusChange"
           @apply-updates="applyAll"
+          @reject-updates="rejectAll"
         />
       </section>
       <section>
         <HistoryPanel
-          class="mt"
           :document-id="selectedDocument?.id"
           :history="history"
           @refresh="loadHistory"
-        />
-        <UpdatesPanel
-          class="mt"
-          :document-id="selectedDocument?.id"
-          :updates="updates"
-          @refresh="loadUpdates"
-          @apply="applyAll"
-          @reject="rejectAll"
-          @clear="clearAll"
         />
       </section>
     </main>
@@ -57,7 +48,6 @@ import DocumentList from './components/DocumentList.vue';
 import DocumentEditor from './components/DocumentEditor.vue';
 import HistoryPanel from './components/HistoryPanel.vue';
 import SessionCreator from './components/SessionCreator.vue';
-import UpdatesPanel from './components/UpdatesPanel.vue';
 import {
   applyUpdates,
   clearUpdates,
@@ -245,6 +235,122 @@ loadDocuments();
   .layout {
     padding: 24px;
   }
+}
+</style>
+
+<style>
+/* TipTap Editor Styles */
+.tiptap {
+  outline: none;
+}
+
+.tiptap p {
+  line-height: 1.6;
+  margin: 1rem 0;
+}
+
+.tiptap h1,
+.tiptap h2,
+.tiptap h3 {
+  width: 100%;
+  margin: 1.5rem 0 1rem;
+  font-weight: bold;
+  line-height: 1.3;
+}
+
+.tiptap h1 {
+  font-size: 2rem;
+}
+
+.tiptap h2 {
+  font-size: 1.75rem;
+}
+
+.tiptap h3 {
+  font-size: 1.5rem;
+}
+
+.tiptap ul {
+  list-style: disc;
+  padding-inline-start: 1.5rem;
+  margin: 1rem 0;
+}
+
+.tiptap ol {
+  list-style: decimal;
+  padding-inline-start: 1.5rem;
+  margin: 1rem 0;
+}
+
+.tiptap li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+}
+
+.tiptap blockquote {
+  border-inline-start: 4px solid #bebebe;
+  padding-inline-start: 1rem;
+  color: #666;
+  font-style: italic;
+  margin: 1rem 0;
+}
+
+.tiptap hr {
+  border: 0;
+  border-top: 1px solid #ccc;
+  margin: 2rem 0;
+}
+
+.tiptap strong {
+  font-weight: bold;
+}
+
+.tiptap em {
+  font-style: italic;
+}
+
+.tiptap u {
+  text-decoration: underline;
+}
+
+.tiptap s {
+  text-decoration: line-through;
+}
+
+.tiptap a {
+  color: #3498db;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tiptap a:hover {
+  color: #2980b9;
+}
+
+.tiptap p.is-empty::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Remove blue border on focus */
+.tiptap:focus {
+  outline: none;
+}
+
+.ProseMirror-focused {
+  outline: none !important;
+}
+
+/* Fix suggestion decoration */
+.suggestion {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.suggestion.is-empty {
+  color: rgba(0, 0, 0, 0.4);
 }
 </style>
 

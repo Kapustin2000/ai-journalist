@@ -1,7 +1,7 @@
 import { VueRenderer } from '@tiptap/vue-3';
 import tippy, { type Instance as TippyInstance } from 'tippy.js';
 import { Editor, type Range } from '@tiptap/core';
-import CommandsList from '~/components/Editor/Content/CommandsList.vue';
+import CommandsList from '@/editor/legacy/Content/CommandsList.vue';
 
 interface SuggestionItem {
   name: string;
@@ -123,7 +123,7 @@ const items: SuggestionItem[] = [
   },
 ];
 
-export const suggestion = {
+const suggestion = {
   items: ({ query }: { query: string }): SuggestionItem[] => {
     return items.filter((item) =>
       item.name.toLowerCase().startsWith(query.toLowerCase())
@@ -137,7 +137,10 @@ export const suggestion = {
     return {
       onStart: (props: SuggestionProps) => {
         component = new VueRenderer(CommandsList, {
-          props,
+          props: {
+            items: props.items,
+            command: props.command,
+          },
           editor: props.editor,
         });
 
@@ -157,7 +160,10 @@ export const suggestion = {
       },
 
       onUpdate(props: SuggestionProps) {
-        component.updateProps(props);
+        component.updateProps({
+          items: props.items,
+          command: props.command,
+        });
 
         if (!props.clientRect) {
           return;
@@ -184,5 +190,7 @@ export const suggestion = {
     };
   },
 };
+
+export { suggestion };
 
 export default suggestion;
