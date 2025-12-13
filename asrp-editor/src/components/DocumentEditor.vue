@@ -203,6 +203,15 @@
             <span>{{ new Date(document.updatedAt).toLocaleString() }}</span>
           </p>
         </section>
+        
+        <!-- AI Chat Section - Always Open -->
+        <section class="sidebar-card">
+          <AiChat
+            :document-id="document.id"
+            :selected-block-id="selectedBlockId"
+            @apply-update="handleAiUpdate"
+          />
+        </section>
       </aside>
     </div>
   </div>
@@ -223,6 +232,10 @@ import type { DocumentRecord, DocumentStatus } from '../types/documents';
 import { DEFAULT_EDITOR_DOC } from '../editor/defaultContent';
 import CommandsExtension from '@/extensions/Commands';
 import { suggestion } from '@/extensions/Suggestion';
+import BlockId from '@/extensions/BlockId';
+import { serializeToMarkdown, parseFromMarkdown, exportToCleanMarkdown } from '@/utils/markdown';
+import AiChat from './AiChat.vue';
+import api from '@/services/api';
 
 const TIPTAP_BLOCK_TYPE = 'tiptap';
 
@@ -256,6 +269,7 @@ const showBlockMenu = ref(false);
 const blockMenuRef = ref<HTMLElement | null>(null);
 const selectionVersion = ref(0);
 const coverImage = ref<string | null>(null);
+const selectedBlockId = ref<string | null>(null);
 
 const handleImageUpload = (event: Event) => {
   const target = event.target as HTMLInputElement;
@@ -279,6 +293,9 @@ const editor = useEditor({
       },
     }),
     Underline,
+    BlockId.configure({
+      types: ['paragraph', 'heading', 'blockquote', 'codeBlock', 'bulletList', 'orderedList'],
+    }),
     Placeholder.configure({
       placeholder: 'Напишите вводный абзац...',
     }),
@@ -291,6 +308,23 @@ const editor = useEditor({
     dirty.value = true;
   },
 });
+
+// Функции для работы с Markdown
+const getMarkdown = () => {
+  if (!editor.value) return '';
+  return serializeToMarkdown(editor.value.state.doc);
+};
+
+const getCleanMarkdown = () => {
+  if (!editor.value) return '';
+  return exportToCleanMarkdown(editor.value.state.doc);
+};
+
+const setMarkdown = (markdown: string) => {
+  if (!editor.value) return;
+  const doc = parseFromMarkdown(markdown);
+  editor.value.commands.setContent(doc);
+};
 
 const document = computed(() => props.document);
 
@@ -488,6 +522,21 @@ const canSave = computed(
       seoDescription.value !== (document.value?.content?.metadata?.seoDescription ?? '') ||
       title.value !== (document.value?.title ?? '')),
 );
+
+const handleAiUpdate = async (update: any) => {
+  // Применить AI update к редактору
+  try {
+    await api.post(`/documents/${document.value?.id}/updates/apply`, {
+      updateIds: [update.id],
+    });
+    
+    // Обновить контент редактора
+    // В будущем можно добавить более умную логику обновления
+    window.location.reload();
+  } catch (error) {
+    console.error('Failed to apply AI update:', error);
+  }
+};
 
 const handleSave = () => {
   if (!editor.value || !document.value) return;

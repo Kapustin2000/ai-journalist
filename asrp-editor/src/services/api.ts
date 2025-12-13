@@ -78,3 +78,4 @@ export const createSession = async (payload: {
   return data;
 };
 
+export default api;
