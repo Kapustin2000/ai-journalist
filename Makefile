@@ -74,11 +74,20 @@ build: ## Собрать backend и frontend
 test-backend: ## Тестировать backend
 	@cd back-end && pnpm run test
 
+ai-service: ## Запустить AI service
+	@./run_ai_service.sh
+
 test-ai: ## Тест AI endpoints
-	@echo "🧪 Тестирование AI Chat..."
+	@echo "🧪 Testing AI Chat..."
 	@curl -X POST http://localhost:3000/ai/chat \
 		-H "Content-Type: application/json" \
 		-d '{"documentId":"test","message":"improve article"}' | jq .
+
+test-ai-direct: ## Test AI service directly
+	@echo "🧪 Testing AI service..."
+	@curl -X POST http://localhost:5001/api/v1/chat \
+		-H "Content-Type: application/json" \
+		-d '{"message":"test","documentContent":"{}"}' | jq .
 
 pgadmin: ## Запустить pgAdmin
 	@docker-compose --profile tools up -d pgadmin

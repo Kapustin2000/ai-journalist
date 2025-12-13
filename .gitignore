@@ -12,6 +12,8 @@
 !/Dockerfile
 !/docker-compose.yml
 !/Makefile
+!/run_ai_service.sh
+!/.env.ai.example
 !/docs/
 !/docs/**
 !/back-end/

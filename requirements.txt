@@ -1,2 +1,4 @@
 google-adk
+flask
+flask-cors
 python-dotenv
