@@ -80,18 +80,26 @@
             ></textarea>
           </div>
 
-          <div v-if="editor" class="legacy-editor">
-            <div class="toolbar">
-              <button
-                v-for="btn in toolbarButtons"
-                :key="btn.label"
-                :class="['toolbar-btn', { active: btn.isActive?.() }]"
-                @click="btn.onClick()"
-                type="button"
-              >
-                {{ btn.label }}
-              </button>
+          <div class="flex flex-col gap-2">
+            <label class="text-slate-400 text-sm uppercase tracking-wide">
+              Обложка статьи
+            </label>
+            <div class="image-upload-area">
+              <input
+                type="file"
+                accept="image/*"
+                class="hidden"
+                id="cover-upload"
+                @change="handleImageUpload"
+              />
+              <label for="cover-upload" class="upload-label">
+                <span v-if="!coverImage">📷 Загрузить изображение</span>
+                <img v-else :src="coverImage" class="cover-preview" alt="Cover" />
+              </label>
             </div>
+          </div>
+
+          <div v-if="editor" class="legacy-editor">
             <EditorContent class="editor-surface" :editor="editor" />
           </div>
         </div>
@@ -214,7 +222,7 @@ import { computed, ref, watch, onBeforeUnmount, watchEffect } from 'vue';
 import type { DocumentRecord, DocumentStatus } from '../types/documents';
 import { DEFAULT_EDITOR_DOC } from '../editor/defaultContent';
 import CommandsExtension from '@/extensions/Commands';
-import suggestion from '@/extensions/Suggestion';
+import { suggestion } from '@/extensions/Suggestion';
 
 const TIPTAP_BLOCK_TYPE = 'tiptap';
 
@@ -247,13 +255,27 @@ const dirty = ref(false);
 const showBlockMenu = ref(false);
 const blockMenuRef = ref<HTMLElement | null>(null);
 const selectionVersion = ref(0);
+const coverImage = ref<string | null>(null);
+
+const handleImageUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      coverImage.value = e.target?.result as string;
+      dirty.value = true;
+    };
+    reader.readAsDataURL(file);
+  }
+};
 
 const editor = useEditor({
   content: DEFAULT_EDITOR_DOC,
   extensions: [
     StarterKit.configure({
       heading: {
-        levels: [1, 2, 3],
+        levels: [2, 3, 4, 5, 6],
       },
     }),
     Underline,
@@ -591,11 +613,11 @@ const clearContent = () => {
 }
 
 .title-input {
-  @apply bg-transparent border border-slate-800 rounded-2xl p-4 text-3xl font-semibold text-white focus:outline-none focus:border-sky-500/60;
+  @apply bg-transparent border-0 rounded-2xl p-4 text-3xl font-semibold text-white focus:outline-none;
 }
 
 .legacy-editor {
-  @apply border border-slate-800 rounded-2xl overflow-hidden;
+  @apply rounded-2xl overflow-hidden;
 }
 
 .editor-surface {
@@ -681,6 +703,26 @@ const clearContent = () => {
 
 .empty-state-small {
   @apply text-sm text-slate-400 text-center py-3;
+}
+
+.image-upload-area {
+  @apply w-full;
+}
+
+.upload-label {
+  @apply flex items-center justify-center w-full h-32 border-2 border-dashed border-slate-700 rounded-2xl cursor-pointer hover:border-sky-500/60 transition bg-slate-900/40;
+}
+
+.upload-label span {
+  @apply text-slate-400 text-sm;
+}
+
+.cover-preview {
+  @apply w-full h-full object-cover rounded-2xl;
+}
+
+.hidden {
+  @apply sr-only;
 }
 
 .panel,

@@ -67,7 +67,8 @@ defineEmits<{
 }
 
 .document-list {
-  @apply flex flex-col gap-3 overflow-y-auto max-h-[45vh] pr-1;
+  @apply flex flex-col gap-3 overflow-y-auto pr-1;
+  max-height: 350px;
 }
 
 .document-card {

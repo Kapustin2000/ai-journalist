@@ -27,19 +27,6 @@ const items: SuggestionItem[] = [
     },
   },
   {
-    name: 'Heading 1',
-    description: 'Big section heading.',
-    icon: 'mdi:format-header-1',
-    command: ({ editor, range }) => {
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .setNode('heading', { level: 1 })
-        .run();
-    },
-  },
-  {
     name: 'Heading 2',
     description: 'Medium section heading.',
     icon: 'mdi:format-header-2',

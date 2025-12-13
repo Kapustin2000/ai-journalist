@@ -1,15 +1,15 @@
 <template>
   <div
     ref="containerRef"
-    class="commands__list bg-primary-foreground max-h-80 overflow-y-auto overflow-x-hidden border border-border shadow-md rounded-md py-2 flex flex-col items-start justify-start w-64"
+    class="commands__list max-h-80 overflow-y-auto overflow-x-hidden border border-slate-700 shadow-2xl rounded-xl py-2 flex flex-col items-start justify-start w-64 bg-slate-900"
   >
     <div class="px-3 py-2 text-sm text-white/60 font-medium">BASIC BLOCKS</div>
     <button
       v-for="(item, index) in items"
       :key="item.name"
       :ref="(el) => setItemRef(el as HTMLElement | null, index)"
-      class="w-full flex items-center gap-3 px-3 py-2 hover:bg-secondary cursor-pointer transition-colors duration-150"
-      :class="{ 'bg-secondary': index === selectedIndex }"
+      class="w-full flex items-center gap-3 px-3 py-2 hover:bg-slate-800 cursor-pointer transition-colors duration-150"
+      :class="{ 'bg-slate-800': index === selectedIndex }"
       @click="selectItem(index)"
     >
       <div
@@ -26,7 +26,14 @@
 </template>
 
 <script setup lang="ts">
-import type { SuggestionItem } from '~/types/suggestion';
+import { ref, nextTick, watch, onMounted } from 'vue';
+
+export interface SuggestionItem {
+  name: string;
+  icon: string;
+  description: string;
+  command: ({ editor, range }: any) => void;
+}
 
 interface Props {
   items: SuggestionItem[];
