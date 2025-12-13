@@ -77,6 +77,9 @@ test-backend: ## Тестировать backend
 ai-service: ## Запустить AI service
 	@./run_ai_service.sh
 
+view-ai-logs: ## Показать информацию о логах AI service
+	@./view_logs.sh
+
 test-ai: ## Тест AI endpoints
 	@echo "🧪 Testing AI Chat..."
 	@curl -X POST http://localhost:3000/ai/chat \
@@ -95,12 +98,16 @@ pgadmin: ## Запустить pgAdmin
 	@echo "Email: admin@journalist.local"
 	@echo "Password: admin"
 
+test-integration: ## Тест полной интеграции
+	@./test_integration.sh
+
 status: ## Показать статус всех сервисов
-	@echo "📊 Статус Docker контейнеров:"
+	@echo "📊 Docker containers:"
 	@docker-compose ps
 	@echo ""
-	@echo "📊 Проверка портов:"
-	@lsof -i :5432 | head -2 || echo "PostgreSQL не запущен"
-	@lsof -i :3000 | head -2 || echo "Backend не запущен"
-	@lsof -i :5173 | head -2 || echo "Frontend не запущен"
+	@echo "📊 Ports:"
+	@lsof -i :5432 | head -2 || echo "PostgreSQL: ✗"
+	@lsof -i :3000 | head -2 || echo "Backend: ✗"
+	@lsof -i :5173 | head -2 || echo "Frontend: ✗"
+	@lsof -i :5001 | head -2 || echo "AI Service: ✗"
 

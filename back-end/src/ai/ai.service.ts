@@ -1,28 +1,51 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { DocumentsService } from '../documents/documents.service';
 import { RewriteBlockDto } from './dto/rewrite-block.dto';
 import { InsertBlockDto } from './dto/insert-block.dto';
 import { ChatDto } from './dto/chat.dto';
 import axios from 'axios';
+import { randomUUID } from 'crypto';
+
+interface AiOperation {
+  id: string;
+  documentId: string;
+  type: string;
+  status: string;
+  input: any;
+  output?: any;
+  error?: string;
+  createdAt: string;
+  completedAt?: string;
+}
+
+interface ChatMessage {
+  id: string;
+  sessionId: string;
+  documentId: string;
+  role: string;
+  content: string;
+  createdAt: string;
+}
 
 @Injectable()
 export class AiService {
   private readonly aiServiceUrl: string;
+  private operations = new Map<string, AiOperation>();
+  private chatMessages = new Map<string, ChatMessage[]>();
+  private sessions = new Map<string, any>();
 
-  constructor(private prisma: PrismaService) {
+  constructor(private documentsService: DocumentsService) {
     this.aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:5001';
   }
 
   async rewriteBlock(dto: RewriteBlockDto) {
-    const document = await this.prisma.document.findUnique({
-      where: { id: dto.documentId },
-    });
+    const document = this.documentsService.getDocument(dto.documentId);
 
     if (!document) {
       throw new NotFoundException('Document not found');
     }
 
-    const content = document.content as any;
+    const content = document.content;
     const block = this.findBlockById(content, dto.blockId);
 
     if (!block) {
@@ -31,116 +54,97 @@ export class AiService {
 
     const blockText = this.blockToText(block);
 
-    // Create AI operation record
-    const operation = await this.prisma.aiOperation.create({
-      data: {
-        documentId: dto.documentId,
-        type: 'rewrite',
-        status: 'pending',
-        input: {
-          blockId: dto.blockId,
-          instruction: dto.instruction,
-          content: blockText,
-        },
-        metadata: {
-          blockId: dto.blockId,
-          blockType: block.type,
-        },
+    const operation: AiOperation = {
+      id: randomUUID(),
+      documentId: dto.documentId,
+      type: 'rewrite',
+      status: 'pending',
+      input: {
+        blockId: dto.blockId,
+        instruction: dto.instruction,
+        content: blockText,
       },
-    });
+      createdAt: new Date().toISOString(),
+    };
+    this.operations.set(operation.id, operation);
 
     try {
       const startTime = Date.now();
-      
-      await this.prisma.aiOperation.update({
-        where: { id: operation.id },
-        data: { status: 'processing' },
-      });
+      operation.status = 'processing';
       const response = await axios.post(`${this.aiServiceUrl}/api/v1/rewrite-block`, {
         blockId: dto.blockId,
         content: blockText,
         instruction: dto.instruction,
         context: dto.context || this.getBlockContext(content, dto.blockId),
       }, {
-        timeout: 30000,
+        timeout: 120000, // 2 minutes for AI processing
       });
 
       const processingMs = Date.now() - startTime;
 
-      await this.prisma.aiOperation.update({
-        where: { id: operation.id },
-        data: {
-          status: 'completed',
-          output: response.data,
-          processingMs,
-          tokensUsed: response.data.tokensUsed,
-          completedAt: new Date(),
-        },
-      });
+      operation.status = 'completed';
+      operation.output = response.data;
+      operation.completedAt = new Date().toISOString();
 
-      const update = await this.prisma.documentUpdate.create({
-        data: {
-          documentId: dto.documentId,
-          type: 'rewrite',
-          payload: {
-            blockId: dto.blockId,
-            content: response.data.newContent,
-            oldContent: blockText,
-          },
-          state: 'pending',
-          note: response.data.note || 'AI rewrite suggestion',
+      // Add update to document
+      const doc = this.documentsService.getDocument(dto.documentId);
+      const updateId = randomUUID();
+      doc.pendingUpdates.push({
+        id: updateId,
+        type: 'rewrite',
+        payload: {
+          blockId: dto.blockId,
+          content: response.data.newContent,
+          oldContent: blockText,
         },
+        state: 'pending',
+        note: response.data.note || 'AI rewrite suggestion',
+        createdAt: new Date().toISOString(),
       });
 
       return {
-        updateId: update.id,
+        updateId,
         preview: response.data.newContent,
         note: response.data.note,
       };
     } catch (error) {
       console.error('AI Service Error:', error.message);
 
-      await this.prisma.aiOperation.update({
-        where: { id: operation.id },
-        data: {
-          status: 'failed',
-          error: error.message,
-          completedAt: new Date(),
-        },
-      });
+      operation.status = 'failed';
+      operation.error = error.message;
+      operation.completedAt = new Date().toISOString();
       
-      const mockUpdate = await this.prisma.documentUpdate.create({
-        data: {
-          documentId: dto.documentId,
-          type: 'rewrite',
-          payload: {
-            blockId: dto.blockId,
-            content: `[AI would rewrite]: ${blockText}\n\nInstruction: ${dto.instruction}`,
-            oldContent: blockText,
-          },
-          state: 'pending',
-          note: 'AI service is not available - this is a mock response',
+      const doc = this.documentsService.getDocument(dto.documentId);
+      const updateId = randomUUID();
+      doc.pendingUpdates.push({
+        id: updateId,
+        type: 'rewrite',
+        payload: {
+          blockId: dto.blockId,
+          content: `[AI would rewrite]: ${blockText}\n\nInstruction: ${dto.instruction}`,
+          oldContent: blockText,
         },
+        state: 'pending',
+        note: 'AI service is not available - this is a mock response',
+        createdAt: new Date().toISOString(),
       });
 
       return {
-        updateId: mockUpdate.id,
-        preview: (mockUpdate.payload as any)?.content || '',
-        note: mockUpdate.note,
+        updateId,
+        preview: `[AI would rewrite]: ${blockText}\n\nInstruction: ${dto.instruction}`,
+        note: 'AI service is not available - this is a mock response',
       };
     }
   }
 
   async insertBlock(dto: InsertBlockDto) {
-    const document = await this.prisma.document.findUnique({
-      where: { id: dto.documentId },
-    });
+    const document = this.documentsService.getDocument(dto.documentId);
 
     if (!document) {
       throw new NotFoundException('Document not found');
     }
 
-    const content = document.content as any;
+    const content = document.content;
 
     try {
       const response = await axios.post(`${this.aiServiceUrl}/api/v1/insert-block`, {
@@ -148,143 +152,166 @@ export class AiService {
         instruction: dto.instruction,
         context: dto.context || this.getBlockContext(content, dto.insertAfter),
       }, {
-        timeout: 30000,
+        timeout: 120000, // 2 minutes for AI processing
       });
 
-      const update = await this.prisma.documentUpdate.create({
-        data: {
-          documentId: dto.documentId,
-          type: 'insert',
-          payload: {
-            insertAfter: dto.insertAfter,
-            content: response.data.newContent,
-          },
-          state: 'pending',
-          note: response.data.note || 'AI insert suggestion',
+      const doc = this.documentsService.getDocument(dto.documentId);
+      const updateId = randomUUID();
+      doc.pendingUpdates.push({
+        id: updateId,
+        type: 'insert',
+        payload: {
+          insertAfter: dto.insertAfter,
+          content: response.data.newContent,
         },
+        state: 'pending',
+        note: response.data.note || 'AI insert suggestion',
+        createdAt: new Date().toISOString(),
       });
 
       return {
-        updateId: update.id,
+        updateId,
         preview: response.data.newContent,
         note: response.data.note,
       };
     } catch (error) {
       console.error('AI Service Error:', error.message);
 
-      const mockUpdate = await this.prisma.documentUpdate.create({
-        data: {
-          documentId: dto.documentId,
-          type: 'insert',
-          payload: {
-            insertAfter: dto.insertAfter,
-            content: `[AI would insert new content here]\n\nInstruction: ${dto.instruction}`,
-          },
-          state: 'pending',
-          note: 'AI service is not available - this is a mock response',
+      const doc = this.documentsService.getDocument(dto.documentId);
+      const updateId = randomUUID();
+      const mockContent = `[AI would insert new content here]\n\nInstruction: ${dto.instruction}`;
+      
+      doc.pendingUpdates.push({
+        id: updateId,
+        type: 'insert',
+        payload: {
+          insertAfter: dto.insertAfter,
+          content: mockContent,
         },
+        state: 'pending',
+        note: 'AI service is not available - this is a mock response',
+        createdAt: new Date().toISOString(),
       });
 
       return {
-        updateId: mockUpdate.id,
-        preview: (mockUpdate.payload as any)?.content || '',
-        note: mockUpdate.note,
+        updateId,
+        preview: mockContent,
+        note: 'AI service is not available - this is a mock response',
       };
     }
   }
 
   async chat(dto: ChatDto) {
-    const document = await this.prisma.document.findUnique({
-      where: { id: dto.documentId },
-    });
+    const document = this.documentsService.getDocument(dto.documentId);
 
     if (!document) {
       throw new NotFoundException('Document not found');
     }
 
-    const content = document.content as any;
+    const content = document.content;
     const documentInfo = this.getDocumentInfo(content);
 
-    // Get or create AI session
-    let session = await this.prisma.aiSession.findFirst({
-      where: { documentId: dto.documentId },
-      orderBy: { lastActiveAt: 'desc' },
-    });
-
+    // Get or create session
+    let session = this.sessions.get(dto.documentId);
     if (!session) {
-      session = await this.prisma.aiSession.create({
-        data: {
-          documentId: dto.documentId,
-          metadata: { documentInfo },
-        },
-      });
+      session = {
+        id: randomUUID(),
+        documentId: dto.documentId,
+        createdAt: new Date().toISOString(),
+      };
+      this.sessions.set(dto.documentId, session);
+      this.chatMessages.set(session.id, []);
     }
 
     // Save user message
-    await this.prisma.aiChatMessage.create({
-      data: {
-        sessionId: session.id,
-        documentId: dto.documentId,
-        role: 'user',
-        content: dto.message,
-        metadata: { selectedBlockId: dto.selectedBlockId },
-      },
-    });
+    const userMessage: ChatMessage = {
+      id: randomUUID(),
+      sessionId: session.id,
+      documentId: dto.documentId,
+      role: 'user',
+      content: dto.message,
+      createdAt: new Date().toISOString(),
+    };
+    
+    const messages = this.chatMessages.get(session.id) || [];
+    messages.push(userMessage);
+    this.chatMessages.set(session.id, messages);
 
     try {
-      const response = await axios.post(`${this.aiServiceUrl}/api/v1/chat`, {
+      console.log('\n' + '='.repeat(80));
+      console.log('🤖 Backend: Sending request to AI service');
+      console.log('='.repeat(80));
+      console.log(`📤 URL: ${this.aiServiceUrl}/api/v1/chat`);
+      console.log(`📨 Message: ${dto.message}`);
+      console.log(`📄 Document ID: ${dto.documentId}`);
+      console.log(`📋 Document info: ${documentInfo.substring(0, 200)}...`);
+      console.log(`📊 Content blocks: ${content.blocks?.length || 0}`);
+      
+      const requestPayload = {
         documentContent: JSON.stringify(content),
         message: dto.message,
         selectedBlockId: dto.selectedBlockId,
         documentInfo,
-      }, {
-        timeout: 30000,
+      };
+      
+      console.log(`📦 Payload size: ${JSON.stringify(requestPayload).length} bytes`);
+      console.log('⏳ Waiting for AI service response...\n');
+      
+      const startTime = Date.now();
+      const response = await axios.post(`${this.aiServiceUrl}/api/v1/chat`, requestPayload, {
+        timeout: 120000, // 2 minutes for AI processing
       });
+      
+      const duration = Date.now() - startTime;
+      console.log(`✅ AI service responded in ${duration}ms`);
+      console.log(`📥 Response status: ${response.status}`);
+      console.log(`📥 Response data keys: ${Object.keys(response.data).join(', ')}`);
+      console.log(`📥 Message length: ${response.data.message?.length || 0} chars`);
+      console.log(`📥 Message preview: ${response.data.message?.substring(0, 200) || 'No message'}...`);
+      console.log('='.repeat(80) + '\n');
 
       // Save assistant message
-      const assistantMessage = await this.prisma.aiChatMessage.create({
-        data: {
-          sessionId: session.id,
-          documentId: dto.documentId,
-          role: 'assistant',
-          content: response.data.message,
-          metadata: { updates: response.data.updates },
-        },
-      });
-
-      // Update session
-      await this.prisma.aiSession.update({
-        where: { id: session.id },
-        data: {
-          messageCount: { increment: 2 },
-          lastActiveAt: new Date(),
-        },
-      });
+      const assistantMessage: ChatMessage = {
+        id: randomUUID(),
+        sessionId: session.id,
+        documentId: dto.documentId,
+        role: 'assistant',
+        content: response.data.message,
+        createdAt: new Date().toISOString(),
+      };
+      
+      messages.push(assistantMessage);
 
       return {
         id: assistantMessage.id,
         message: response.data.message,
         updates: response.data.updates || [],
       };
-    } catch (error) {
-      console.error('AI Service Error:', error.message);
+    } catch (error: any) {
+      console.error('\n' + '='.repeat(80));
+      console.error('❌ Backend: AI Service Error');
+      console.error('='.repeat(80));
+      console.error(`Error type: ${error.constructor.name}`);
+      console.error(`Error message: ${error.message}`);
+      if (error.response) {
+        console.error(`Response status: ${error.response.status}`);
+        console.error(`Response data: ${JSON.stringify(error.response.data).substring(0, 500)}`);
+      }
+      if (error.code) {
+        console.error(`Error code: ${error.code}`);
+      }
+      console.error('='.repeat(80) + '\n');
 
-      const mockMessage = await this.prisma.aiChatMessage.create({
-        data: {
-          sessionId: session.id,
-          documentId: dto.documentId,
-          role: 'assistant',
-          content: `I understand you want to: "${dto.message}". AI service is currently not available, but I would help you with that task.`,
-        },
-      });
-
-      await this.prisma.aiSession.update({
-        where: { id: session.id },
-        data: {
-          messageCount: { increment: 2 },
-          lastActiveAt: new Date(),
-        },
-      });
+      const mockMessage: ChatMessage = {
+        id: randomUUID(),
+        sessionId: session.id,
+        documentId: dto.documentId,
+        role: 'assistant',
+        content: `I understand you want to: "${dto.message}". AI service is currently not available, but I would help you with that task.`,
+        createdAt: new Date().toISOString(),
+      };
+      
+      messages.push(mockMessage);
 
       return {
         id: mockMessage.id,
@@ -295,9 +322,7 @@ export class AiService {
   }
 
   async improveArticle(documentId: string) {
-    const document = await this.prisma.document.findUnique({
-      where: { id: documentId },
-    });
+    const document = this.documentsService.getDocument(documentId);
 
     if (!document) {
       throw new NotFoundException('Document not found');

@@ -152,6 +152,11 @@ const sendMessage = async () => {
   // Скроллим вниз
   await scrollToBottom();
 
+  console.log('Sending AI chat message:', {
+    documentId: props.documentId,
+    message: messageText,
+  });
+
   try {
     // Отправляем на бэкенд
     const response = await api.post('/ai/chat', {
@@ -161,12 +166,13 @@ const sendMessage = async () => {
     });
 
     // Добавляем ответ AI
+    const data = response.data || response;
     const aiMessage: Message = {
-      id: response.id || `ai_${Date.now()}`,
+      id: data.id || `ai_${Date.now()}`,
       role: 'assistant',
-      content: response.message || response.response || 'Извините, произошла ошибка.',
+      content: data.message || 'Извините, произошла ошибка.',
       timestamp: new Date(),
-      updates: response.updates || [],
+      updates: data.updates || [],
     };
     messages.value.push(aiMessage);
   } catch (error: any) {

@@ -2,13 +2,14 @@
   "name": "ai-journalist-root",
   "private": true,
   "scripts": {
-    "dev:backend": "pnpm --dir back-end run start:dev",
+    "dev": "concurrently -k -p \"[{name}]\" -n \"backend,frontend,ai\" -c \"blue,green,yellow\" \"cd back-end && pnpm run start:dev\" \"cd asrp-editor && pnpm run dev\" \"make ai-service\"",
+    "dev:backend": "cd back-end && pnpm run start:dev",
+    "dev:frontend": "cd asrp-editor && pnpm run dev",
+    "dev:ai": "make ai-service",
     "dev:adk": "PORT=${ADK_PORT:-8000}; adk api_server --port $PORT",
-    "dev:editor": "pnpm --dir asrp-editor run dev",
-    "dev": "concurrently -k -p \"[{name}]\" -n back-end,adk,editor -c green,cyan,magenta \"pnpm run dev:backend\" \"pnpm run dev:adk\" \"pnpm run dev:editor\""
+    "install:all": "pnpm install && cd back-end && pnpm install && cd ../asrp-editor && pnpm install"
   },
   "devDependencies": {
     "concurrently": "^9.0.1"
   }
 }
-

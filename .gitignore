@@ -13,7 +13,13 @@
 !/docker-compose.yml
 !/Makefile
 !/run_ai_service.sh
+!/test_integration.sh
 !/.env.ai.example
+!/START_ALL.md
+!/AI_SERVICE.md
+!/logs/
+!/logs/.gitkeep
+/logs/*
 !/docs/
 !/docs/**
 !/back-end/

@@ -3,7 +3,7 @@ import uuid
 from typing import List, Dict, Any
 from google.adk.agents.llm_agent import ToolContext
 
-def markup_article_blocks(article_content: str, tool_context: ToolContext) -> dict:
+def markup_article_blocks(article_content: str, tool_context: ToolContext = None) -> dict:
     """
     Parse article content and mark each block with a unique ID.
     For markdown, adds HTML comments with block IDs before each block.
@@ -173,8 +173,9 @@ def markup_article_blocks(article_content: str, tool_context: ToolContext) -> di
     
     marked_content = '\n'.join(marked_lines)
     
-    # Store blocks in tool context state
-    tool_context.state['article_blocks'] = blocks
+    # Store blocks in tool context state if available
+    if tool_context and hasattr(tool_context, 'state'):
+        tool_context.state['article_blocks'] = blocks
     
     return {
         "status": "success",

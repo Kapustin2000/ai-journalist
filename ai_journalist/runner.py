@@ -90,18 +90,49 @@ Start by marking up the blocks."""
     try:
         # Run the agent using Runner (synchronous convenience method)
         # Internally, Runner.run calls Runner.run_async and manages the event loop
-        print("Starting article processing...")
-        print(f"Article length: {len(article_content)} characters")
+        print("=" * 60)
+        print("🤖 Starting article processing with AI agent...")
+        print(f"📝 Article length: {len(article_content)} characters")
+        print(f"📋 Session ID: {session_id}")
+        print(f"👤 User ID: {user_id}")
+        print(f"💬 Initial message: {initial_message[:200]}...")
+        print("=" * 60)
         
         # Runner.run processes the user message and yields events
         # The Runner handles session state updates through SessionService
         # run() requires user_id, session_id, and new_message (Content type)
         new_message = types.UserContent(parts=[types.Part(text=initial_message)])
-        events = list(runner.run(
+        
+        print("🔄 Running agent...")
+        events = []
+        for i, event in enumerate(runner.run(
             user_id=user_id,
             session_id=session_id,
             new_message=new_message
-        ))
+        )):
+            events.append(event)
+            event_type = type(event).__name__
+            print(f"📨 Event #{i+1}: {event_type}")
+            
+            # Log event details
+            if hasattr(event, 'content'):
+                if isinstance(event.content, list):
+                    for j, content_item in enumerate(event.content):
+                        if hasattr(content_item, 'text'):
+                            text_preview = content_item.text[:100] if content_item.text else "None"
+                            print(f"   Content[{j}]: {text_preview}...")
+                elif hasattr(event.content, 'text'):
+                    text_preview = event.content.text[:100] if event.content.text else "None"
+                    print(f"   Content: {text_preview}...")
+            
+            if hasattr(event, 'tool_calls'):
+                print(f"   🔧 Tool calls: {len(event.tool_calls) if event.tool_calls else 0}")
+                if event.tool_calls:
+                    for tool_call in event.tool_calls[:3]:  # Show first 3
+                        tool_name = getattr(tool_call, 'name', 'unknown')
+                        print(f"      - {tool_name}")
+        
+        print(f"✅ Total events received: {len(events)}")
         
         # Get results from session state after processing
         # State is committed by Runner after each event is processed
@@ -117,24 +148,95 @@ Start by marking up the blocks."""
         article_blocks = state.get('article_blocks', [])
         
         # Collect response text from events
+        print("\n📥 Collecting response from events...")
         response_text = ""
-        for event in events:
+        for i, event in enumerate(events):
+            event_type = type(event).__name__
+            print(f"\n   Event #{i+1} ({event_type}):")
+            
             if hasattr(event, 'content') and event.content:
-                if isinstance(event.content, list):
-                    for content_item in event.content:
-                        if hasattr(content_item, 'text'):
-                            response_text += content_item.text + "\n"
-                elif hasattr(event.content, 'text'):
-                    response_text += event.content.text + "\n"
+                print(f"      ✅ Has content (type: {type(event.content).__name__})")
+                
+                # Handle Content object with parts
+                if hasattr(event.content, 'parts'):
+                    parts = event.content.parts
+                    print(f"      Content has {len(parts)} parts")
+                    for j, part in enumerate(parts):
+                        part_type = type(part).__name__
+                        print(f"         Part[{j}] type: {part_type}")
+                        
+                        # Check for text in part
+                        if hasattr(part, 'text') and part.text:
+                            text = part.text
+                            response_text += text + "\n"
+                            print(f"         ✅ Text found in part[{j}]: {len(text)} chars")
+                            print(f"         Text preview: {text[:150]}...")
+                        
+                        # Check for function_call (tool calls) - skip these
+                        if hasattr(part, 'function_call'):
+                            print(f"         ⚙️  Part[{j}] is a function_call (tool call), skipping")
+                        
+                        # Check for function_response (tool responses) - skip these
+                        if hasattr(part, 'function_response'):
+                            print(f"         ⚙️  Part[{j}] is a function_response (tool response), skipping")
+                
+                # Fallback: check if content has text directly
+                elif hasattr(event.content, 'text') and event.content.text:
+                    text = event.content.text
+                    response_text += text + "\n"
+                    print(f"      ✅ Text found directly: {len(text)} chars")
+                
+                # Handle list of content items
+                elif isinstance(event.content, list):
+                    print(f"      Content is list with {len(event.content)} items")
+                    for j, content_item in enumerate(event.content):
+                        if hasattr(content_item, 'text') and content_item.text:
+                            text = content_item.text
+                            response_text += text + "\n"
+                            print(f"         ✅ Text found in item[{j}]: {len(text)} chars")
+                else:
+                    print(f"      ⚠️  Content exists but structure unknown")
+                    print(f"      Content type: {type(event.content).__name__}")
+                    print(f"      Content attributes: {[attr for attr in dir(event.content) if not attr.startswith('_')][:10]}")
+            else:
+                print(f"      ⚠️  No content or content is None")
+            
+            # Check for other possible response fields
+            if hasattr(event, 'text') and event.text:
+                text = event.text
+                response_text += text + "\n"
+                print(f"      ✅ Found 'text' attribute directly: {len(text)} chars")
+        
+        # If we got text, use it; otherwise provide helpful message
+        if response_text.strip():
+            final_response = response_text.strip()
+        elif error_occurred and "429" in error_occurred:
+            final_response = "I apologize, but I've reached the daily API quota limit (20 requests/day for free tier). Please try again later or upgrade your API plan. For more information: https://ai.google.dev/gemini-api/docs/rate-limits"
+        elif error_occurred:
+            final_response = f"I encountered an error while processing: {error_occurred}. Please try again."
+        else:
+            final_response = "Processing completed, but no text response was generated. The agent may have used tools without providing a text response."
+        
+        print(f"\n📤 Final response length: {len(final_response)} chars")
+        print(f"📤 Response preview: {final_response[:200]}...")
+        print(f"📊 Marked article length: {len(marked_article)} chars")
+        print(f"📊 Blocks found: {len(article_blocks)}")
+        if error_occurred:
+            print(f"⚠️  Error occurred: {error_occurred}")
         
         result = {
-            "status": "success",
+            "status": "success" if not error_occurred else "partial",
             "marked_content": marked_article,
             "blocks": article_blocks,
             "total_blocks": len(article_blocks),
-            "response": response_text.strip() if response_text else "Processing completed",
+            "response": final_response,
             "events_count": len(events),
+            "error": error_occurred if error_occurred else None,
         }
+        
+        print("=" * 60)
+        print("✅ Processing completed successfully")
+        print("=" * 60 + "\n")
         
         # Save to file if output path provided
         if output_path:
